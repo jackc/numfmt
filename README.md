@@ -1,5 +1,5 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/jackc/numfmt.svg)](https://pkg.go.dev/github.com/jackc/numfmt)
-[![Build Status](https://travis-ci.org/jackc/numfmt.svg)](https://travis-ci.org/jackc/numfmt)
+![CI](https://github.com/jackc/numfmt/workflows/CI/badge.svg)
 
 # numfmt
 
