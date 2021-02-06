@@ -97,3 +97,35 @@ func TestFormatterFormat(t *testing.T) {
 		}
 	}
 }
+
+func TestNewUSDFormatter(t *testing.T) {
+	for i, tt := range []struct {
+		arg      interface{}
+		expected string
+	}{
+		{"123", "$123.00"},
+		{"-123", "-$123.00"},
+		{"123.456", "$123.456"},
+	} {
+		actual := numfmt.NewUSDFormatter().Format(tt.arg)
+		if tt.expected != actual {
+			t.Errorf("%d. expected formatting %v to return %v, but got %v", i, tt.arg, tt.expected, actual)
+		}
+	}
+}
+
+func TestNewPercentFormatter(t *testing.T) {
+	for i, tt := range []struct {
+		arg      interface{}
+		expected string
+	}{
+		{"0.123", "12.3%"},
+		{"1.5", "150%"},
+		{"-3", "-300%"},
+	} {
+		actual := numfmt.NewPercentFormatter().Format(tt.arg)
+		if tt.expected != actual {
+			t.Errorf("%d. expected formatting %v to return %v, but got %v", i, tt.arg, tt.expected, actual)
+		}
+	}
+}

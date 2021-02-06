@@ -15,7 +15,8 @@ func (r *Rounder) Round(d decimal.Decimal) decimal.Decimal {
 	return d.Round(r.Places)
 }
 
-// Formatter is a formatter of numbers. The zero value is usable. Do not change a Formatter after it has been used.
+// Formatter is a formatter of numbers. The zero value is usable. Do not change or copy a Formatter after it has been
+// used.
 type Formatter struct {
 	GroupSeparator   string // Separator to place between groups of digits. Default: ","
 	GroupSize        int    // Number of digits in a group. Default: 3
@@ -283,4 +284,20 @@ func compileTemplate(s string) compiledTemplate {
 	}
 
 	return ct
+}
+
+// NewUSDFormatter returns a Formatter for US dollars.
+func NewUSDFormatter() *Formatter {
+	return &Formatter{
+		MinDecimalPlaces: 2,
+		Template:         `-$n`,
+	}
+}
+
+// NewPercentFormatter returns a formatter that formats a number such as 0.75 to 75%.
+func NewPercentFormatter() *Formatter {
+	return &Formatter{
+		Shift:    2,
+		Template: `-n%`,
+	}
 }
