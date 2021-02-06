@@ -70,6 +70,8 @@ func TestFormatterFormat(t *testing.T) {
 		// Shift happens before rounding
 		{&numfmt.Formatter{Shift: 2, Rounder: &numfmt.Rounder{Places: 0}}, "0.315", "32"},
 
+		{&numfmt.Formatter{MinDecimalPlaces: 2}, "123", "123.00"},
+
 		// Template
 		{&numfmt.Formatter{Template: "+n"}, "123", "+123"},
 		{&numfmt.Formatter{Template: "-n"}, "123", "123"},

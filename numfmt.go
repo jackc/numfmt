@@ -26,6 +26,8 @@ type Formatter struct {
 	// will convert a fraction to a percentage.
 	Shift int32
 
+	MinDecimalPlaces int32 // Minimum number of decimal places to display.
+
 	// Template is a simple format string. All text other than format verbs is passed through unmodified. Backslash '\'
 	// escaping can be used to include a character otherwise used as a verb. If neither '-' nor '+' are in the string
 	// negative numbers will be prefixed with '-' as normal.
@@ -98,6 +100,15 @@ func (f *Formatter) FormatDecimal(d decimal.Decimal) string {
 	if intPart[0] == '-' {
 		neg = true
 		intPart = intPart[1:]
+	}
+
+	if len(fracPart) < int(f.MinDecimalPlaces) {
+		buf := make([]byte, int(f.MinDecimalPlaces))
+		copy(buf, fracPart)
+		for i := len(fracPart); i < len(buf); i++ {
+			buf[i] = '0'
+		}
+		fracPart = string(buf)
 	}
 
 	sb := &strings.Builder{}
