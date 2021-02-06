@@ -8,7 +8,7 @@ import (
 )
 
 type Rounder struct {
-	Places int32
+	Places int32 // Number of decimal places to round to.
 }
 
 func (r *Rounder) Round(d decimal.Decimal) decimal.Decimal {
@@ -16,8 +16,8 @@ func (r *Rounder) Round(d decimal.Decimal) decimal.Decimal {
 }
 
 type Formatter struct {
-	GroupSeparator   string // Default: ","
-	GroupSize        int    // Default: 3
+	GroupSeparator   string // Separator to place between groups of digits. Default: ","
+	GroupSize        int    // Number of digits in a group. Default: 3
 	DecimalSeparator string // Default: "."
 	Rounder          *Rounder
 }
