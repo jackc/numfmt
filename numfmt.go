@@ -63,6 +63,7 @@ type Formatter struct {
 	compileTemplateOnce sync.Once
 }
 
+// Format formats v. v can be anything that fmt.Sprint can convert to a parsable number.
 func (f *Formatter) Format(v interface{}) string {
 	switch v := v.(type) {
 	case decimal.Decimal:

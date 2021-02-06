@@ -129,3 +129,32 @@ func TestNewPercentFormatter(t *testing.T) {
 		}
 	}
 }
+
+func ExampleFormatter_rounding() {
+	f := &numfmt.Formatter{
+		Rounder: &numfmt.Rounder{Places: 2},
+	}
+	fmt.Println(f.Format("1234.56789"))
+
+	// Output:
+	// 1,234.57
+}
+
+func ExampleFormatter_negative_currency() {
+	f := &numfmt.Formatter{
+		NegativeTemplate: "(n)",
+		MinDecimalPlaces: 2,
+	}
+	fmt.Println(f.Format("-1234"))
+
+	// Output:
+	// (1,234.00)
+}
+
+func ExampleNewPercentFormatter() {
+	f := numfmt.NewPercentFormatter()
+	fmt.Println(f.Format("0.781"))
+
+	// Output:
+	// 78.1%
+}
