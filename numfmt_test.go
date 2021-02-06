@@ -25,6 +25,12 @@ func (f *testFormatter) String() string {
 	if f.Rounder != nil {
 		parts = append(parts, fmt.Sprintf(`Rounder: {Places: %d}`, f.Rounder.Places))
 	}
+	if f.Template != "" {
+		parts = append(parts, fmt.Sprintf(`Template: "%s"`, f.Template))
+	}
+	if f.NegativeTemplate != "" {
+		parts = append(parts, fmt.Sprintf(`NegativeTemplate: "%s"`, f.NegativeTemplate))
+	}
 
 	return "&Formatter{" + strings.Join(parts, ", ") + "}"
 }
@@ -63,6 +69,17 @@ func TestFormatterFormat(t *testing.T) {
 
 		// Shift happens before rounding
 		{&numfmt.Formatter{Shift: 2, Rounder: &numfmt.Rounder{Places: 0}}, "0.315", "32"},
+
+		// Template
+		{&numfmt.Formatter{Template: "+n"}, "123", "+123"},
+		{&numfmt.Formatter{Template: "-n"}, "123", "123"},
+		{&numfmt.Formatter{Template: "-n"}, "-123", "-123"},
+		{&numfmt.Formatter{Template: "n -"}, "-123", "123 -"},
+		{&numfmt.Formatter{Template: `\n \- \+ \\ n`}, "123", `n - + \ 123`},
+
+		// Negative Template
+		{&numfmt.Formatter{NegativeTemplate: "(n)"}, "123", "123"},
+		{&numfmt.Formatter{NegativeTemplate: "(n)"}, "-123", "(123)"},
 
 		// Different argument type tests
 		{&numfmt.Formatter{}, 1234, "1,234"},

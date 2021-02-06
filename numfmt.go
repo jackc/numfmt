@@ -15,6 +15,7 @@ func (r *Rounder) Round(d decimal.Decimal) decimal.Decimal {
 	return d.Round(r.Places)
 }
 
+// Formatter is a formatter of numbers. The zero value is usable. Do not change a Formatter after it has been used.
 type Formatter struct {
 	GroupSeparator   string // Separator to place between groups of digits. Default: ","
 	GroupSize        int    // Number of digits in a group. Default: 3
@@ -24,6 +25,36 @@ type Formatter struct {
 	// Number of places to shift decimal places to the left. Negative numbers are shifted to the right. If set to 2 this
 	// will convert a fraction to a percentage.
 	Shift int32
+
+	// Template is a simple format string. All text other than format verbs is passed through unmodified. Backslash '\'
+	// escaping can be used to include a character otherwise used as a verb. If neither '-' nor '+' are in the string
+	// negative numbers will be prefixed with '-' as normal.
+	//
+	// Verbs:
+	//   n    the number
+	//   -    optional negative sign
+	//   +    always include sign
+	//
+	// Examples:
+	//   "n"    => 9.45
+	//   "- n"  => - 9.45
+	//   "+n"   => +9.45
+	//   "n +"  => 9.45 +
+	//   "$n"   => $9.45
+	//   "n%"   => 9.45%
+	//
+	// Default: "n"
+	Template         string
+	compiledTemplate compiledTemplate
+
+	// NegativeTemplate will be used if present instead of Template for negative values. The primary expected use is for
+	// negative values surrounded by parentheses. It uses the same verbs as Template.
+	//
+	// Examples:
+	//   "(n)"    => (9.45)
+	// Default: ""
+	NegativeTemplate         string
+	compiledNegativeTemplate compiledTemplate
 }
 
 func (f *Formatter) Format(v interface{}) string {
@@ -47,17 +78,16 @@ func (f *Formatter) Format(v interface{}) string {
 }
 
 func (f *Formatter) FormatDecimal(d decimal.Decimal) string {
+	f.ensureTemplatesCompiled()
+
 	if f.Shift != 0 {
 		d = d.Shift(f.Shift)
 	}
 	if f.Rounder != nil {
 		d = d.Round(f.Rounder.Places)
 	}
-	return f.formatNumberString(d.String())
-}
 
-func (f *Formatter) formatNumberString(s string) string {
-	parts := strings.SplitN(s, ".", 2)
+	parts := strings.SplitN(d.String(), ".", 2)
 	intPart := parts[0]
 	var fracPart string
 	if len(parts) == 2 {
@@ -71,30 +101,31 @@ func (f *Formatter) formatNumberString(s string) string {
 	}
 
 	sb := &strings.Builder{}
-	if neg {
-		sb.WriteString("-")
-	}
-
-	groupSeparator := ","
-	if f.GroupSeparator != "" {
-		groupSeparator = f.GroupSeparator
-	}
-	groupSize := 3
-	if f.GroupSize != 0 {
-		groupSize = f.GroupSize
-	}
-	writeSeparateGroups(sb, intPart, groupSeparator, groupSize)
-
-	decimalSeparator := "."
-	if f.DecimalSeparator != "" {
-		decimalSeparator = f.DecimalSeparator
-	}
-	if len(fracPart) != 0 {
-		sb.WriteString(decimalSeparator)
-		sb.WriteString(fracPart)
+	if neg && f.compiledNegativeTemplate != nil {
+		f.compiledNegativeTemplate.write(sb, f, neg, intPart, fracPart)
+	} else {
+		f.compiledTemplate.write(sb, f, neg, intPart, fracPart)
 	}
 
 	return sb.String()
+}
+
+func (f *Formatter) ensureTemplatesCompiled() {
+	if f.compiledTemplate != nil {
+		return
+	}
+
+	t := "n"
+	if f.Template != "" {
+		t = f.Template
+	}
+	f.compiledTemplate = compileTemplate(t)
+
+	if f.NegativeTemplate == "" {
+		return
+	}
+
+	f.compiledNegativeTemplate = compileTemplate(f.NegativeTemplate)
 }
 
 func writeSeparateGroups(sb *strings.Builder, num, groupSeparator string, groupSize int) {
@@ -117,4 +148,128 @@ func writeSeparateGroups(sb *strings.Builder, num, groupSeparator string, groupS
 		numIdx += groupSize
 		sb.WriteString(num[lastNumIdx:numIdx])
 	}
+}
+
+type compiledTemplatePart interface {
+	write(sb *strings.Builder, f *Formatter, neg bool, intPart, fracPart string)
+}
+
+type compiledTemplate []compiledTemplatePart
+
+func (ct compiledTemplate) write(sb *strings.Builder, f *Formatter, neg bool, intPart, fracPart string) {
+	for _, part := range ct {
+		part.write(sb, f, neg, intPart, fracPart)
+	}
+}
+
+type compiledTemplatePartLiteral string
+
+func (p compiledTemplatePartLiteral) write(sb *strings.Builder, f *Formatter, neg bool, intPart, fracPart string) {
+	sb.WriteString(string(p))
+}
+
+type compiledTemplatePartNumber struct{}
+
+func (compiledTemplatePartNumber) write(sb *strings.Builder, f *Formatter, neg bool, intPart, fracPart string) {
+	groupSeparator := ","
+	if f.GroupSeparator != "" {
+		groupSeparator = f.GroupSeparator
+	}
+	groupSize := 3
+	if f.GroupSize != 0 {
+		groupSize = f.GroupSize
+	}
+	writeSeparateGroups(sb, intPart, groupSeparator, groupSize)
+
+	decimalSeparator := "."
+	if f.DecimalSeparator != "" {
+		decimalSeparator = f.DecimalSeparator
+	}
+	if len(fracPart) != 0 {
+		sb.WriteString(decimalSeparator)
+		sb.WriteString(fracPart)
+	}
+}
+
+type compiledTemplatePartOptionalSign struct{}
+
+func (compiledTemplatePartOptionalSign) write(sb *strings.Builder, f *Formatter, neg bool, intPart, fracPart string) {
+	if neg {
+		sb.WriteByte('-')
+	}
+}
+
+type compiledTemplatePartForceSign struct{}
+
+func (compiledTemplatePartForceSign) write(sb *strings.Builder, f *Formatter, neg bool, intPart, fracPart string) {
+	var sign byte
+	if neg {
+		sign = '-'
+	} else {
+		sign = '+'
+	}
+	sb.WriteByte(sign)
+}
+
+func compileTemplate(s string) compiledTemplate {
+	sr := strings.NewReader(s)
+
+	ct := compiledTemplate{}
+
+	literal := &strings.Builder{}
+	explicitSign := false
+	escape := false
+	for {
+		b, err := sr.ReadByte()
+		if err != nil {
+			if literal.Len() > 0 {
+				ct = append(ct, compiledTemplatePartLiteral(literal.String()))
+			}
+			break
+		}
+
+		if escape {
+			literal.WriteByte(b)
+			escape = false
+			continue
+		}
+
+		if b == '\\' {
+			escape = true
+			continue
+		}
+
+		if b == 'n' || b == '-' || b == '+' {
+			if literal.Len() > 0 {
+				ct = append(ct, compiledTemplatePartLiteral(literal.String()))
+				literal.Reset()
+			}
+
+			switch b {
+			case 'n':
+				ct = append(ct, compiledTemplatePartNumber{})
+			case '-':
+				explicitSign = true
+				ct = append(ct, compiledTemplatePartOptionalSign{})
+			case '+':
+				explicitSign = true
+				ct = append(ct, compiledTemplatePartForceSign{})
+			}
+		} else {
+			literal.WriteByte(b)
+		}
+	}
+
+	if !explicitSign {
+		newCt := make(compiledTemplate, 0, len(ct)+1)
+		for _, part := range ct {
+			if _, ok := part.(compiledTemplatePartNumber); ok {
+				ct = append(ct, compiledTemplatePartOptionalSign{})
+			}
+			newCt = append(newCt, part)
+		}
+		ct = newCt
+	}
+
+	return ct
 }
