@@ -74,6 +74,10 @@ func (f *Formatter) Format(v interface{}) string {
 			return fmt.Sprint(v)
 		}
 		return f.formatDecimal(d)
+	case int32:
+		return f.formatDecimal(decimal.NewFromInt32(v))
+	case int64:
+		return f.formatDecimal(decimal.NewFromInt(v))
 	default:
 		s := fmt.Sprint(v)
 		d, err := decimal.NewFromString(s)

@@ -86,6 +86,10 @@ func TestFormatterFormat(t *testing.T) {
 		// Different argument type tests
 		{&numfmt.Formatter{}, 1234, "1,234"},
 		{&numfmt.Formatter{}, 1234.0, "1,234"},
+		{&numfmt.Formatter{}, int32(1234), "1,234"},
+		{&numfmt.Formatter{}, int64(1234), "1,234"},
+		{&numfmt.Formatter{}, float32(1234.5), "1,234.5"},
+		{&numfmt.Formatter{}, float64(1234.5), "1,234.5"},
 		{&numfmt.Formatter{}, decimal.RequireFromString("1234"), "1,234"},
 
 		// Not a number
