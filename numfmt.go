@@ -20,6 +20,10 @@ type Formatter struct {
 	GroupSize        int    // Number of digits in a group. Default: 3
 	DecimalSeparator string // Default: "."
 	Rounder          *Rounder
+
+	// Number of places to shift decimal places to the left. Negative numbers are shifted to the right. If set to 2 this
+	// will convert a fraction to a percentage.
+	Shift int32
 }
 
 func (f *Formatter) Format(v interface{}) string {
@@ -43,6 +47,9 @@ func (f *Formatter) Format(v interface{}) string {
 }
 
 func (f *Formatter) FormatDecimal(d decimal.Decimal) string {
+	if f.Shift != 0 {
+		d = d.Shift(f.Shift)
+	}
 	if f.Rounder != nil {
 		d = d.Round(f.Rounder.Places)
 	}

@@ -58,6 +58,12 @@ func TestFormatterFormat(t *testing.T) {
 		{&numfmt.Formatter{Rounder: &numfmt.Rounder{Places: 3}}, "1234.5678", "1,234.568"},
 		{&numfmt.Formatter{Rounder: &numfmt.Rounder{Places: -2}}, "1234.5678", "1,200"},
 
+		{&numfmt.Formatter{Shift: 2}, "0.31", "31"},
+		{&numfmt.Formatter{Shift: -1}, "42", "4.2"},
+
+		// Shift happens before rounding
+		{&numfmt.Formatter{Shift: 2, Rounder: &numfmt.Rounder{Places: 0}}, "0.315", "32"},
+
 		// Different argument type tests
 		{&numfmt.Formatter{}, 1234, "1,234"},
 		{&numfmt.Formatter{}, 1234.0, "1,234"},
