@@ -1,3 +1,11 @@
+// Package numfmt is a number formatting system.
+/*
+Number formatting is provided by the Formatter type. The zero value of Formatter will format numbers with commas every
+3 digits and a period between the integer and fractional parts of a number.
+
+		f := &numfmt.Formatter{}
+		f.Format("1234.56789") => 1,234.56789
+*/
 package numfmt
 
 import (

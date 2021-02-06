@@ -134,6 +134,14 @@ func TestNewPercentFormatter(t *testing.T) {
 	}
 }
 
+func ExampleFormatter_zero() {
+	f := &numfmt.Formatter{}
+	fmt.Println(f.Format("1234.56789"))
+
+	// Output:
+	// 1,234.56789
+}
+
 func ExampleFormatter_rounding() {
 	f := &numfmt.Formatter{
 		Rounder: &numfmt.Rounder{Places: 2},
