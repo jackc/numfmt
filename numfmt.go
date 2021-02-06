@@ -3,6 +3,7 @@ package numfmt
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/shopspring/decimal"
 )
@@ -16,7 +17,7 @@ func (r *Rounder) Round(d decimal.Decimal) decimal.Decimal {
 }
 
 // Formatter is a formatter of numbers. The zero value is usable. Do not change or copy a Formatter after it has been
-// used.
+// used. The methods on Format are concurrency safe.
 type Formatter struct {
 	GroupSeparator   string // Separator to place between groups of digits. Default: ","
 	GroupSize        int    // Number of digits in a group. Default: 3
@@ -58,6 +59,8 @@ type Formatter struct {
 	// Default: ""
 	NegativeTemplate         string
 	compiledNegativeTemplate compiledTemplate
+
+	compileTemplateOnce sync.Once
 }
 
 func (f *Formatter) Format(v interface{}) string {
@@ -81,7 +84,7 @@ func (f *Formatter) Format(v interface{}) string {
 }
 
 func (f *Formatter) FormatDecimal(d decimal.Decimal) string {
-	f.ensureTemplatesCompiled()
+	f.compileTemplateOnce.Do(f.compileTemplates)
 
 	if f.Shift != 0 {
 		d = d.Shift(f.Shift)
@@ -122,7 +125,7 @@ func (f *Formatter) FormatDecimal(d decimal.Decimal) string {
 	return sb.String()
 }
 
-func (f *Formatter) ensureTemplatesCompiled() {
+func (f *Formatter) compileTemplates() {
 	if f.compiledTemplate != nil {
 		return
 	}
