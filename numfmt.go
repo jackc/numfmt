@@ -67,24 +67,24 @@ type Formatter struct {
 func (f *Formatter) Format(v interface{}) string {
 	switch v := v.(type) {
 	case decimal.Decimal:
-		return f.FormatDecimal(v)
+		return f.formatDecimal(v)
 	case string:
 		d, err := decimal.NewFromString(v)
 		if err != nil {
 			return fmt.Sprint(v)
 		}
-		return f.FormatDecimal(d)
+		return f.formatDecimal(d)
 	default:
 		s := fmt.Sprint(v)
 		d, err := decimal.NewFromString(s)
 		if err != nil {
 			return s
 		}
-		return f.FormatDecimal(d)
+		return f.formatDecimal(d)
 	}
 }
 
-func (f *Formatter) FormatDecimal(d decimal.Decimal) string {
+func (f *Formatter) formatDecimal(d decimal.Decimal) string {
 	f.compileTemplateOnce.Do(f.compileTemplates)
 
 	if f.Shift != 0 {
