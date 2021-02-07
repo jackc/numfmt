@@ -12,8 +12,11 @@
 * Configurable thousands separators
 * Scaling for percentage formatting
 * Format negative values differently for correct currency output like `-$12.34` or `(12.34)`
+* Easy to use with `text/template` and `html/template`
 
-## Example
+## Examples
+
+Use directly from Go:
 
 ```go
 f := &numfmt.Formatter{
@@ -21,6 +24,13 @@ f := &numfmt.Formatter{
   MinDecimalPlaces: 2,
 }
 f.Format("-1234") // => "(1,234.00)"
+```
+
+Or in use in `text/template`:
+
+```
+{{numfmt "1234.5"}} => "1,234.5"
+{{numfmt "GroupSeparator" " " "DecimalSeparator" "," "1234.5"}} => "1 234,5"
 ```
 
 See the [documentation](https://pkg.go.dev/github.com/jackc/numfmt) for more examples.

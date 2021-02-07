@@ -2,11 +2,14 @@ package numfmt_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/jackc/numfmt"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 )
 
 type testFormatter numfmt.Formatter
@@ -102,6 +105,43 @@ func TestFormatterFormat(t *testing.T) {
 	}
 }
 
+func TestTemplateFunc(t *testing.T) {
+	for i, tt := range []struct {
+		format   []interface{}
+		arg      interface{}
+		expected string
+	}{
+		{[]interface{}{}, "1234.5", "1,234.5"},
+		{[]interface{}{"DecimalSeparator", ","}, "1.2", "1,2"},
+		{[]interface{}{"GroupSeparator", " "}, "1234", "1 234"},
+		{[]interface{}{"GroupSize", 1}, "1234", "1,2,3,4"},
+		{[]interface{}{"RoundPlaces", 0}, "1234.9", "1,235"},
+		{[]interface{}{"Shift", 2}, "0.31", "31"},
+		{[]interface{}{"Shift", 2, "RoundPlaces", 0}, "0.315", "32"},
+		{[]interface{}{"MinDecimalPlaces", 2}, "123", "123.00"},
+		{[]interface{}{"Template", "+n"}, "123", "+123"},
+		{[]interface{}{"NegativeTemplate", "(n)"}, "-123", "(123)"},
+	} {
+		fn, err := numfmt.TemplateFunc(tt.format...)
+		assert.NoError(t, err)
+		if fn, ok := fn.(func(interface{}) string); ok {
+			actual := fn(tt.arg)
+			if tt.expected != actual {
+				t.Errorf("%d. func: expected formatting %v with %v to return %v, but got %v", i, tt.arg, tt.format, tt.expected, actual)
+			}
+		} else {
+			t.Errorf("%d. func: expected formatting with %v to return function but did not", i, tt.format)
+		}
+
+		args := append(tt.format, tt.arg)
+		actual, err := numfmt.TemplateFunc(args...)
+		assert.NoError(t, err)
+		if tt.expected != actual {
+			t.Errorf("%d. immediate: expected formatting %v with %v to return %v, but got %v", i, tt.arg, tt.format, tt.expected, actual)
+		}
+	}
+}
+
 func TestNewUSDFormatter(t *testing.T) {
 	for i, tt := range []struct {
 		arg      interface{}
@@ -132,6 +172,30 @@ func TestNewPercentFormatter(t *testing.T) {
 			t.Errorf("%d. expected formatting %v to return %v, but got %v", i, tt.arg, tt.expected, actual)
 		}
 	}
+}
+
+func ExampleTemplateFunc() {
+	t := template.New("root").Funcs(template.FuncMap{
+		"numfmt": numfmt.TemplateFunc,
+	})
+	t = template.Must(t.Parse(`
+numfmt can be called directly:
+{{numfmt "GroupSeparator" " " "DecimalSeparator" "," "1234.56789"}}
+or it can return a function for later use:
+{{- $formatUSD := numfmt "Template" "$n" "RoundPlaces" 2 "MinDecimalPlaces" 2}}
+{{call $formatUSD "1234.56789"}}
+`))
+
+	err := t.Execute(os.Stdout, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// numfmt can be called directly:
+	// 1 234,56789
+	// or it can return a function for later use:
+	// $1,234.57
 }
 
 func ExampleFormatter_zero() {

@@ -10,6 +10,7 @@ package numfmt
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -300,6 +301,73 @@ func compileTemplate(s string) compiledTemplate {
 	}
 
 	return ct
+}
+
+// TemplateFunc is a helper method for use with text/template and html/template. args is a sequence of key-value pairs
+// configuring the formatting. If len(args) is even a formatting function is returned. If len(args) is odd the final
+// value is formatted and returned.
+//
+// Keys are generally named the same as matching the Formatter fields:
+//   GroupSeparator
+//   GroupSize
+//   DecimalSeparator
+//   RoundPlaces
+//   Shift
+//   MinDecimalPlaces
+//   Template
+//   NegativeTemplate
+func TemplateFunc(args ...interface{}) (interface{}, error) {
+	f := &Formatter{}
+	for i := 0; i < len(args)-1; i += 2 {
+		key := args[i]
+		strValue := fmt.Sprint(args[i+1])
+
+		switch key {
+		case "GroupSeparator":
+			f.GroupSeparator = strValue
+		case "GroupSize":
+			n, err := strconv.ParseInt(strValue, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			f.GroupSize = int(n)
+		case "DecimalSeparator":
+			f.DecimalSeparator = strValue
+		case "RoundPlaces":
+			n, err := strconv.ParseInt(strValue, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			if f.Rounder == nil {
+				f.Rounder = &Rounder{}
+			}
+			f.Rounder.Places = int32(n)
+		case "Shift":
+			n, err := strconv.ParseInt(strValue, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			f.Shift = int32(n)
+		case "MinDecimalPlaces":
+			n, err := strconv.ParseInt(strValue, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			f.MinDecimalPlaces = int32(n)
+		case "Template":
+			f.Template = strValue
+		case "NegativeTemplate":
+			f.NegativeTemplate = strValue
+		default:
+			return nil, fmt.Errorf("unknown key: %s", key)
+		}
+	}
+
+	if len(args)%2 == 1 {
+		return f.Format(args[len(args)-1]), nil
+	}
+
+	return f.Format, nil
 }
 
 // NewUSDFormatter returns a Formatter for US dollars.
