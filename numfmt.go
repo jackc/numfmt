@@ -40,8 +40,8 @@ type Formatter struct {
 	MinDecimalPlaces int32 // Minimum number of decimal places to display.
 
 	// Template is a simple format string. All text other than format verbs is passed through unmodified. Backslash '\'
-	// escaping can be used to include a character otherwise used as a verb. If neither '-' nor '+' are in the string
-	// negative numbers will be prefixed with '-' as normal.
+	// escaping can be used to include a character otherwise used as a verb. You must include '-' or '+' to have show
+	// the sign.
 	//
 	// Verbs:
 	//   n    the number
@@ -53,7 +53,7 @@ type Formatter struct {
 	//   "- n"  => - 9.45
 	//   "+n"   => +9.45
 	//   "n +"  => 9.45 +
-	//   "$n"   => $9.45
+	//   "-$n"   => -$9.45
 	//   "n%"   => 9.45%
 	//
 	// Default: "n"
@@ -144,7 +144,7 @@ func (f *Formatter) compileTemplates() {
 		return
 	}
 
-	t := "n"
+	t := "-n"
 	if f.Template != "" {
 		t = f.Template
 	}
@@ -246,7 +246,6 @@ func compileTemplate(s string) compiledTemplate {
 	ct := compiledTemplate{}
 
 	literal := &strings.Builder{}
-	explicitSign := false
 	escape := false
 	for {
 		b, err := sr.ReadByte()
@@ -278,26 +277,13 @@ func compileTemplate(s string) compiledTemplate {
 			case 'n':
 				ct = append(ct, compiledTemplatePartNumber{})
 			case '-':
-				explicitSign = true
 				ct = append(ct, compiledTemplatePartOptionalSign{})
 			case '+':
-				explicitSign = true
 				ct = append(ct, compiledTemplatePartForceSign{})
 			}
 		} else {
 			literal.WriteByte(b)
 		}
-	}
-
-	if !explicitSign {
-		newCt := make(compiledTemplate, 0, len(ct)+1)
-		for _, part := range ct {
-			if _, ok := part.(compiledTemplatePartNumber); ok {
-				newCt = append(newCt, compiledTemplatePartOptionalSign{})
-			}
-			newCt = append(newCt, part)
-		}
-		ct = newCt
 	}
 
 	return ct
