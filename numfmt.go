@@ -293,7 +293,7 @@ func compileTemplate(s string) compiledTemplate {
 		newCt := make(compiledTemplate, 0, len(ct)+1)
 		for _, part := range ct {
 			if _, ok := part.(compiledTemplatePartNumber); ok {
-				ct = append(ct, compiledTemplatePartOptionalSign{})
+				newCt = append(newCt, compiledTemplatePartOptionalSign{})
 			}
 			newCt = append(newCt, part)
 		}

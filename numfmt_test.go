@@ -56,6 +56,7 @@ func TestFormatterFormat(t *testing.T) {
 		{&numfmt.Formatter{}, "1.0", "1"},
 		{&numfmt.Formatter{}, "1.2", "1.2"},
 		{&numfmt.Formatter{}, "12345.6789", "12,345.6789"},
+		{&numfmt.Formatter{}, "-12345.6789", "-12,345.6789"},
 
 		{&numfmt.Formatter{DecimalSeparator: ","}, "1.2", "1,2"},
 		{&numfmt.Formatter{GroupSeparator: " "}, "1234", "1 234"},
@@ -76,6 +77,7 @@ func TestFormatterFormat(t *testing.T) {
 		{&numfmt.Formatter{MinDecimalPlaces: 2}, "123", "123.00"},
 
 		// Template
+		{&numfmt.Formatter{Template: "hi n"}, "-1234", "hi -1234"},
 		{&numfmt.Formatter{Template: "+n"}, "123", "+123"},
 		{&numfmt.Formatter{Template: "-n"}, "123", "123"},
 		{&numfmt.Formatter{Template: "-n"}, "-123", "-123"},
